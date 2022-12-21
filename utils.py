@@ -57,6 +57,7 @@ def compute_feature_stats_for_dir(extractor, dataloader, only_features, cache=No
         result[2] = true_mean
         result[3] = true_cov
     
-    with open(default_path, 'wb') as f:
-        pickle.dump(result, f)
+    if save_cache:
+        with open(default_path, 'wb') as f:
+            pickle.dump(result, f)
     return result
