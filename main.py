@@ -19,8 +19,11 @@ def main(opts):
         only_features = False
     
     
-    
         
+    
+    features, probs, mean, cov = compute_feature_stats_for_dir()
+    
+    
         
     return None
 
