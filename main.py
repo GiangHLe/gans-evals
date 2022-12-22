@@ -107,7 +107,7 @@ def main(opts):
                             image_size=img_size, 
                             batch_size=opts.batch_size, 
                             num_workers=opts.num_workers)
-    ffeatures, fprobs, fmean, fcov = compute_feature_stats_for_dir(extractor=model,
+    ffeatures, _, _, _ = compute_feature_stats_for_dir(extractor=model,
                                                                    dataloader=fake_loader,
                                                                    only_features=only_features,
                                                                    cache=None,
@@ -119,23 +119,23 @@ def main(opts):
                             image_size=img_size, 
                             batch_size=opts.batch_size, 
                             num_workers=opts.num_workers)
-    rfeatures, rprobs, rmean, rcov = compute_feature_stats_for_dir(extractor=model,
+    rfeatures, _, _, _ = compute_feature_stats_for_dir(extractor=model,
                                                                    dataloader=real_loader,
                                                                    only_features=True,
                                                                    cache=None,
                                                                    mean_cov=False,
                                                                    save_cache=True,
                                                                    name=opts.data_name)
-
-
-
-
-
-
-
+    precision, recall = compute_pr(rfeatures, 
+                                   ffeatures, 
+                                   kth=opts.kth, 
+                                   row_batch_size=opts.row_batch_size,
+                                   col_batch_size=opts.col_batch_size)
     
-        
-    return None
+    json_result['Precision'] = precision
+    json_result['Recall'] = recall
+    print(f'Precision: {round(precision, 3)}, Recall: {round(recall, 3)}')  
+    return 
 
 
 if __name__=='__main__':
