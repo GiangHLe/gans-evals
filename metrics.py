@@ -1,3 +1,7 @@
+# Portions of source code adapted from the following sources:
+#   https://github.com/NVlabs/stylegan2-ada-pytorch/tree/main/metrics
+#   Distributed under Apache License 2.0: https://github.com/NVlabs/stylegan2-ada-pytorch/blob/main/LICENSE.txt
+
 
 import numpy as np
 import scipy.linalg
@@ -54,6 +58,8 @@ def compute_distances(row_features, col_features, num_gpus, rank, col_batch_size
     col_batches = torch.nn.functional.pad(col_features, [0, 0, 0, -num_cols % num_batches]).chunk(num_batches)
     dist_batches = []
     for col_batch in col_batches[rank :: num_gpus]:
+        print(row_features.dtype, col_batch.dtype)
+        print(row_features.shape, col_batch.shape)
         dist_batch = torch.cdist(row_features.unsqueeze(0), col_batch.unsqueeze(0))[0]
         for src in range(num_gpus):
             dist_broadcast = dist_batch.clone()
@@ -62,17 +68,25 @@ def compute_distances(row_features, col_features, num_gpus, rank, col_batch_size
             dist_batches.append(dist_broadcast.cpu() if rank == 0 else None)
     return torch.cat(dist_batches, dim=1)[:, :num_cols] if rank == 0 else None
 
-def compute_pr(real_features, gen_features, kth = 3, row_batch_size=10000, col_batch_size=10000):
+def compute_pr(real_features, gen_features, k_nearest = 3, row_batch_size=10000, col_batch_size=10000):
     results = dict()
     for name, manifold, probes in [('precision', real_features, gen_features), ('recall', gen_features, real_features)]:
         kth = []
         for manifold_batch in manifold.split(row_batch_size):
-            dist = compute_distances(row_features=manifold_batch, col_features=manifold, col_batch_size=col_batch_size)
-            kth.append(dist.to(torch.float32).kthvalue(kth + 1).values.to(torch.float16))
+            dist = compute_distances(row_features=manifold_batch, 
+                                     col_features=manifold, 
+                                     col_batch_size=col_batch_size,
+                                     num_gpus=1,
+                                     rank=0)
+            kth.append(dist.to(torch.float32).kthvalue(k_nearest + 1).values.to(torch.float16))
         kth = torch.cat(kth) 
         pred = []
         for probes_batch in probes.split(row_batch_size):
-            dist = compute_distances(row_features=probes_batch, col_features=manifold, col_batch_size=col_batch_size)
+            dist = compute_distances(row_features=probes_batch, 
+                                     col_features=manifold, 
+                                     col_batch_size=col_batch_size,
+                                     num_gpus=1,
+                                     rank=0)
             pred.append((dist <= kth).any(dim=1))
         results[name] = float(torch.cat(pred).to(torch.float32).mean())
     return results['precision'], results['recall']
