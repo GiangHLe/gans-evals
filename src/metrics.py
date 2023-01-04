@@ -58,8 +58,6 @@ def compute_distances(row_features, col_features, num_gpus, rank, col_batch_size
     col_batches = torch.nn.functional.pad(col_features, [0, 0, 0, -num_cols % num_batches]).chunk(num_batches)
     dist_batches = []
     for col_batch in col_batches[rank :: num_gpus]:
-        print(row_features.dtype, col_batch.dtype)
-        print(row_features.shape, col_batch.shape)
         dist_batch = torch.cdist(row_features.unsqueeze(0), col_batch.unsqueeze(0))[0]
         for src in range(num_gpus):
             dist_broadcast = dist_batch.clone()

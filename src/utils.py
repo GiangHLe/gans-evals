@@ -22,6 +22,7 @@ def compute_feature_stats_for_dir(extractor, dataloader, only_features, cache=No
         os.makedirs(default_cache_dir, exist_ok=True)
         default_path = os.path.join(default_cache_dir, f'{name}_{extent}_{extractor.name}.pkl')
         # if os.path.exists(default_path):
+        #     print(f'Cache exists at {default_path}, use cache')
         #     data = load_pickle(default_path)
         #     return data
     else:

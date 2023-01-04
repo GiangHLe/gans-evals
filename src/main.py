@@ -2,6 +2,7 @@
 Currently, I don't think save cache for synthesized image is reasonable, the code below is not implement that part.
 '''
 
+import os
 import torch
 import argparse
 import json
@@ -54,9 +55,13 @@ def main(opts):
     json_result = {'IS': None, 'FID': None, 'KID': None, "Precision":None, 'Recall':None}
     if opts.save_json is None:
         base_name = Path(opts.fake_dir).parts[-1]
-        json_path = f'{base_name}.json'
+        json_name = f'{base_name}.json'
+        json_path = os.path.join(os.getcwd(), json_name)
     else:
         json_path = opts.save_json
+    
+    print('-----------------------------')
+    print(f'Result will be saved at: {json_path}')
     
     mean_cov = True if 'fid' in metrics else False
     
@@ -66,6 +71,8 @@ def main(opts):
         model = Extractor(model_name, opts.dims)
         
         # process fake data
+        print('-----------------------------')
+        print('Processing synthesized images...')
         fake_loader = get_loader(dataset_dir=fake_dir, 
                                  image_size=img_size, 
                                  batch_size=opts.batch_size, 
@@ -75,7 +82,7 @@ def main(opts):
             
         if 'is' in metrics:
             only_features = False
-
+        
         ffeatures, fprobs, fmean, fcov = compute_feature_stats_for_dir(extractor=model,
                                                                        dataloader=fake_loader,
                                                                        only_features=only_features,
@@ -98,6 +105,8 @@ def main(opts):
                 return
 
         # process real data
+        print('-----------------------------')
+        print('Processing real images...')
         real_loader = get_loader(dataset_dir=real_dir, 
                                 image_size=img_size, 
                                 batch_size=opts.batch_size, 
@@ -141,6 +150,9 @@ def main(opts):
     model_name = MODEL_POOL['vgg'][0]
     img_size = MODEL_POOL['vgg'][1]
     model = Extractor(model_name)  
+    
+    print('-----------------------------')
+    print('Processing synthesized images...')
     fake_loader = get_loader(dataset_dir=fake_dir, 
                             image_size=img_size, 
                             batch_size=opts.batch_size, 
@@ -158,7 +170,9 @@ def main(opts):
                                                        float16=check_half,
                                                        device=device,
                                                        verbose=opts.verbose)
-
+    
+    print('-----------------------------')
+    print('Processing real images...')
     real_loader = get_loader(dataset_dir=real_dir, 
                             image_size=img_size, 
                             batch_size=opts.batch_size, 
@@ -184,6 +198,7 @@ def main(opts):
     
     json_result['Precision'] = precision
     json_result['Recall'] = recall
+    dump_json(json_path, json_result)
     print('-----------------------------')
     print(f'Precision: {round(precision, 5)}, Recall: {round(recall, 5)}')  
     if opts.verbose:

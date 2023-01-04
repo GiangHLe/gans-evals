@@ -16,8 +16,10 @@ STATISTIC_STAT = [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]]
 class ImageFolderDataset(Dataset):
     def __init__(self, data_dir, image_size=224, mean_cov_imagenet=False, transform=False) -> None:
         self.image_path = list()
-        for ext in EXTENSION:
-            self.image_path += glob(os.path.join(data_dir, f'*.{ext}'))
+        for root, _, _ in os.walk(data_dir):
+            for ext in EXTENSION:
+                self.image_path += glob(os.path.join(root, f'*.{ext}'))
+        print(f'Found {len(self.image_path)} images')
         self.image_size = image_size
         if mean_cov_imagenet:
             stat = IMAGENET_STAT
