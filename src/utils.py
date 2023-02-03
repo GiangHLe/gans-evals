@@ -9,24 +9,20 @@ def load_pickle(path):
         data = pickle.load(f)
     return data
             
-def compute_feature_stats_for_dir(extractor, dataloader, only_features, cache=None, mean_cov=False, save_cache=True, name=None, verbose=False, to_numpy=True, float16=False, device='cpu'):
+def compute_feature_stats_for_dir(extractor, dataloader, only_features, mean_cov=False, save_cache=True, name=None, verbose=False, to_numpy=True, float16=False, device='cpu'):
     if save_cache:
         assert name is not None
 
     extractor.to(device)
     extractor.eval()
     
-    if cache is None:
-        extent = 'feature' if only_features else 'both'
-        default_cache_dir = os.path.join(os.environ['HOME'], f'.cache', 'gans_metrics')
-        os.makedirs(default_cache_dir, exist_ok=True)
-        default_path = os.path.join(default_cache_dir, f'{name}_{extent}_{extractor.name}.pkl')
-        # if os.path.exists(default_path):
-        #     print(f'Cache exists at {default_path}, use cache')
-        #     data = load_pickle(default_path)
-        #     return data
-    else:
-        data = load_pickle(cache)
+    extent = 'feature' if only_features else 'both'
+    default_cache_dir = os.path.join(os.environ['HOME'], f'.cache', 'gans_metrics')
+    os.makedirs(default_cache_dir, exist_ok=True)
+    default_path = os.path.join(default_cache_dir, f'{name}_{extent}_{extractor.name}.pkl')
+    if os.path.exists(default_path):
+        print(f'Cache exists at {default_path}, use cache')
+        data = load_pickle(default_path)
         return data
                 
     running_mean = None
