@@ -22,6 +22,8 @@ def only(name, alist):
     return [name] == alist
 
 def dump_json(name, data):
+    if name is None:
+        return
     with open(name, 'w') as f:
         json.dump(data, f)
 
@@ -54,16 +56,16 @@ def main(opts):
     only_features = True
     json_result = {'IS': None, 'FID': None, 'KID': None, "Precision":None, 'Recall':None}
     if opts.save_json is None:
-        base_name = Path(opts.fake_dir).parts[-1]
-        json_name = f'{base_name}.json'
-        json_path = os.path.join(os.getcwd(), json_name)
+        json_path = None
+        print('-----------------------------')
+        print(f'Result will be printed on cmd only')
     else:
-        json_path = opts.save_json
-    
-    print('-----------------------------')
-    print(f'Result will be saved at: {json_path}')
+        json_path = opts.save_json    
+        print('-----------------------------')
+        print(f'Result will be saved at: {json_path}')
     
     mean_cov = True if 'fid' in metrics else False
+    save_cache = not opts.not_save_cache
     
     if not only('pr', metrics):
         model_name = MODEL_POOL['inception'][0]
@@ -86,7 +88,6 @@ def main(opts):
         ffeatures, fprobs, fmean, fcov = compute_feature_stats_for_dir(extractor=model,
                                                                        dataloader=fake_loader,
                                                                        only_features=only_features,
-                                                                       cache=None,
                                                                        mean_cov=mean_cov,
                                                                        save_cache=False,
                                                                        name=None,
@@ -116,9 +117,8 @@ def main(opts):
         rfeatures, rprobs, rmean, rcov = compute_feature_stats_for_dir(extractor=model,
                                                                        dataloader=real_loader,
                                                                        only_features=only_features,
-                                                                       cache=None,
                                                                        mean_cov=mean_cov,
-                                                                       save_cache=True,
+                                                                       save_cache=save_cache,
                                                                        name=opts.data_name,
                                                                        device=device,
                                                                        verbose=opts.verbose)
@@ -162,7 +162,6 @@ def main(opts):
     ffeatures, _, _, _ = compute_feature_stats_for_dir(extractor=model,
                                                        dataloader=fake_loader,
                                                        only_features=True,
-                                                       cache=None,
                                                        mean_cov=False,
                                                        save_cache=False,
                                                        name=None,
@@ -182,9 +181,8 @@ def main(opts):
     rfeatures, _, _, _ = compute_feature_stats_for_dir(extractor=model,
                                                        dataloader=real_loader,
                                                        only_features=True,
-                                                       cache=None,
                                                        mean_cov=False,
-                                                       save_cache=True,
+                                                       save_cache=save_cache,
                                                        name=opts.data_name,
                                                        to_numpy=False,
                                                        float16=check_half,
@@ -225,6 +223,7 @@ if __name__=='__main__':
     parser.add_argument('--dims', default = 2048, type=int, help='The position of intermediate features from Inception model, default is 2048. \n Available options: \n + First max pooling features: 64 \n + Second max pooling features: 192 \n + Pre-aux classifier features: 768 \n + Final average pooling features: 2048')
     parser.add_argument('--num-workers', default = 8, type=int, help='Number of workers use for dataloader')    
     parser.add_argument('--verbose', action='store_true', help='Only apply for process bar')
+    parser.add_argument('--not-save-cache', action='store_true', help='Only apply for process bar')
 
     args = parser.parse_args()
     main(args)
