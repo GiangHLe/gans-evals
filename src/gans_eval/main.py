@@ -9,10 +9,10 @@ import json
 import time
 from pathlib import Path
 
-from extractor import Extractor
-from dataset import get_loader
-from utils import compute_feature_stats_for_dir
-from metrics import compute_is, compute_fid, compute_kid, compute_pr
+from gans_eval.extractor import Extractor
+from gans_eval.dataset import get_loader
+from gans_eval.utils import compute_feature_stats_for_dir
+from gans_eval.metrics import compute_is, compute_fid, compute_kid, compute_pr
 
 
 MODEL_POOL = {'inception': ['inception', 299],
@@ -41,7 +41,9 @@ def test_float16(device):
     return float16_available
     
 
-def main(opts):
+def main():
+    opts = get_args()
+    
     if opts.verbose:
         start = time.time()
     
@@ -79,8 +81,7 @@ def main(opts):
                                  image_size=img_size, 
                                  batch_size=opts.batch_size, 
                                  num_workers=opts.num_workers,
-                                 imagenet_stat=False,
-                                 transform=False)  
+                                 imagenet_stat=False) 
             
         if 'is' in metrics:
             only_features = False
@@ -111,7 +112,8 @@ def main(opts):
         real_loader = get_loader(dataset_dir=real_dir, 
                                 image_size=img_size, 
                                 batch_size=opts.batch_size, 
-                                num_workers=opts.num_workers)
+                                num_workers=opts.num_workers,
+                                imagenet_stat=False)
         
 
         rfeatures, rprobs, rmean, rcov = compute_feature_stats_for_dir(extractor=model,
@@ -157,8 +159,7 @@ def main(opts):
                             image_size=img_size, 
                             batch_size=opts.batch_size, 
                             num_workers=opts.num_workers,
-                            imagenet_stat=True,
-                            transform=True)
+                            imagenet_stat=True)
     ffeatures, _, _, _ = compute_feature_stats_for_dir(extractor=model,
                                                        dataloader=fake_loader,
                                                        only_features=True,
@@ -176,8 +177,7 @@ def main(opts):
                             image_size=img_size, 
                             batch_size=opts.batch_size, 
                             num_workers=opts.num_workers,
-                            imagenet_stat=True,
-                            transform=True)
+                            imagenet_stat=True)
     rfeatures, _, _, _ = compute_feature_stats_for_dir(extractor=model,
                                                        dataloader=real_loader,
                                                        only_features=True,
@@ -204,10 +204,10 @@ def main(opts):
     return 
 
 
-if __name__=='__main__':
+def get_args():
     parser = argparse.ArgumentParser(description='GANs evaluate')
     
-    parser.add_argument('--fake-dir', type=str, help='Fake image directory')
+    parser.add_argument('--fake-dir', type=str, help='Fake image directory', required=True)
     parser.add_argument('--real-dir', default=None, type=str, help='Dataset directory, non necessary in case IS only')
     parser.add_argument('--data-name', default='default', type=str, help='Dataset name')
     parser.add_argument('--save-json', default=None, type=str, help='where to save the result, default is working directory')
@@ -226,7 +226,10 @@ if __name__=='__main__':
     parser.add_argument('--not-save-cache', action='store_true', help='Only apply for process bar')
 
     args = parser.parse_args()
-    main(args)
+    return args
+
+if __name__=='__main__':
+    main()
     
     
     

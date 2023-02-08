@@ -1,6 +1,6 @@
 import torch
 import timm
-from inception import InceptionV3
+from gans_eval.inception import InceptionV3
 
 BLOCK_INDEX_BY_DIM = {
     64: 0,   # First max pooling features

@@ -1,23 +1,46 @@
-from setuptools import setup
+import setuptools
+import os
 
-setup(
-    name='pyexample',
-    version='0.1.0',    
-    description='A example Python package',
-    url='https://github.com/shuds13/pyexample',
-    author='Giang Le',
-    author_email='lhgiang149@gmail.com',
-    license='BSD 2-clause',
-    packages=['pyexample'],
-    install_requires=['mpi4py>=2.0',
-                      'numpy',                     
-                      ],
+def read(rel_path):
+    base_path = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(base_path, rel_path), 'r') as f:
+        return f.read()
 
-    classifiers=[
-        'Development Status :: 1 - Planning',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',  
-        'Operating System :: POSIX :: Linux',        
-        'Programming Language :: Python :: 3.7.15',
-    ],
-)
+def get_version(rel_path):
+    for line in read(rel_path).splitlines():
+        if line.startswith('__version__'):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+
+    raise RuntimeError('Unable to find version string.')
+    
+setuptools.setup(
+            name='gans-eval',
+            version=get_version(os.path.join('src', 'gans_eval', '__init__.py')),
+            description='A Python package to evaluate GANs',
+            url='https://github.com/GiangHLe/gans-evals',
+            author='Giang Le',
+            author_email='lhgiang149@gmail.com',
+            install_requires=['numpy',
+                            'opencv-python',
+                            'pillow',
+                            'scipy',
+                            'tqdm',
+                            'timm',
+                            'torch>=1.7.0',
+                            'torchvision>=0.8.0'],
+
+            classifiers=[
+                'Programming Language :: Python :: 3',
+                'Intended Audience :: Science/Research',
+                'License :: OSI Approved :: MIT License',  
+                'Operating System :: POSIX :: Linux',
+                'Programming Language :: Python :: 3.7.15',
+            ],
+            package_dir={"": "src"},
+            packages = setuptools.find_packages(where="src"),
+            python_requires = ">=3.6",
+            entry_points={
+            'console_scripts': [
+                'gans-eval = gans_eval.main:main',
+            ]})
