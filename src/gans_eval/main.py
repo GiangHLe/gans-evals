@@ -220,10 +220,15 @@ def get_args():
     parser.add_argument('--row-batch-size', default=10000, type=int, help='Precision/Recall parameter')
     parser.add_argument('--col-batch-size', default=10000, type=int, help='Precision/Recall parameter')
     parser.add_argument('--batch-size', default = 50, type=int, help='Batch size to run extractor')
-    parser.add_argument('--dims', default = 2048, type=int, help='The position of intermediate features from Inception model, default is 2048. \n Available options: \n + First max pooling features: 64 \n + Second max pooling features: 192 \n + Pre-aux classifier features: 768 \n + Final average pooling features: 2048')
+    parser.add_argument('--dims', default = 2048, type=int, help='The position of intermediate features from Inception model, default is 2048. \n \
+                                                                  Available options: \n \
+                                                                    + First max pooling features: 64 \n \
+                                                                    + Second max pooling features: 192 \n \
+                                                                    + Pre-aux classifier features: 768 \n \
+                                                                    + Final average pooling features: 2048')
     parser.add_argument('--num-workers', default = 8, type=int, help='Number of workers use for dataloader')    
     parser.add_argument('--verbose', action='store_true', help='Only apply for process bar')
-    parser.add_argument('--not-save-cache', action='store_true', help='Only apply for process bar')
+    parser.add_argument('--not-save-cache', action='store_true', help='Not saving the statistic features of real dataset')
 
     args = parser.parse_args()
     return args
