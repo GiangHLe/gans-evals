@@ -1,4 +1,5 @@
 # GANs evaluation metrics Pytorch version  
+[![Downloads](https://static.pepy.tech/personalized-badge/gans-eval?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads)](https://pepy.tech/project/gans-eval)
 
 This implementation covers all the current state-of-the-art evaluation metrics for Generative Adversarial Networks (GANs), including: Inception Score (IS), Fréchet Inception Distance (FID), Kernel Inception Distance (KID), and Precision and Recall (PR).
 
@@ -37,7 +38,7 @@ Requirements:
 Except for IS, other metrics need two individual datasets to process, the simple usage:
 
 ```
-python main.py --fake-dir path_to_syn_dataset --real-dir path_to_real_dataset --metrics is fid kid pr
+gans-eval --fake-dir path_to_syn_dataset --real-dir path_to_real_dataset --metrics is fid kid pr
 ```
 
 All available arguments:
