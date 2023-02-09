@@ -17,7 +17,6 @@ def get_version(rel_path):
 setuptools.setup(
             name='gans-eval',
             version=get_version(os.path.join('src', 'gans_eval', '__init__.py')),
-            description='A Python package to evaluate GANs',
             url='https://github.com/GiangHLe/gans-evals',
             author='Giang Le',
             author_email='lhgiang149@gmail.com',
