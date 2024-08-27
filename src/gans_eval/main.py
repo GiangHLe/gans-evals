@@ -1,62 +1,11 @@
-'''
-Currently, I don't think save cache for synthesized image is reasonable, the code below is not implement that part.
-'''
 
-import os
-import torch
 import argparse
-import json
-import time
-from pathlib import Path
-
-from gans_eval.extractor import Extractor
-from gans_eval.dataset import get_loader
-from gans_eval.utils import compute_feature_stats_for_dir
-from gans_eval.metrics import compute_is, compute_fid, compute_kid, compute_pr
-
-
-MODEL_POOL = {'inception': ['inception', 299],
-              'vgg': ['vgg', 224]}
-
-def only(name, alist):
-    return [name] == alist
-
-def dump_json(name, data):
-    if name is None:
-        return
-    with open(name, 'w') as f:
-        json.dump(data, f)
-
-def print_time(start):
-    print('-----------------------------')
-    print(f'Process took {round(time.time() - start, 2)}s')
-
-def test_float16(device):
-    var = torch.randn(15, 30).half().to(device)
-    float16_available = True
-    try:
-        _ = torch.cdist(var, var)
-    except:
-        float16_available=False
-    return float16_available
-    
-
+from gans_eval.metrics import Metrics
+   
 def main():
     opts = get_args()
     
-    if opts.verbose:
-        start = time.time()
-    
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    check_half = test_float16(device)    
-    
-    fake_dir = opts.fake_dir
-    real_dir = opts.real_dir
-    metrics = opts.metrics
-    # assert len(os.listdir(fake_dir)) >= 50_000, "All papers recommend the number of synthesized images should be larger or equal to 50.000, \
-    #     if for a specific reason, please comment this line."
-    only_features = True
-    json_result = {'IS': None, 'FID': None, 'KID': None, "Precision":None, 'Recall':None}
+    metrics = Metrics(**vars(opts))
     if opts.save_json is None:
         json_path = None
         print('-----------------------------')
@@ -66,143 +15,10 @@ def main():
         print('-----------------------------')
         print(f'Result will be saved at: {json_path}')
     
-    mean_cov = True if 'fid' in metrics else False
-    save_cache = not opts.not_save_cache
-    
-    if not only('pr', metrics):
-        model_name = MODEL_POOL['inception'][0]
-        img_size = MODEL_POOL['inception'][1]
-        model = Extractor(model_name, opts.dims)
-        
-        # process fake data
-        print('-----------------------------')
-        print('Processing synthesized images...')
-        fake_loader = get_loader(dataset_dir=fake_dir, 
-                                 image_size=img_size, 
-                                 batch_size=opts.batch_size, 
-                                 num_workers=opts.num_workers,
-                                 imagenet_stat=False) 
-            
-        if 'is' in metrics:
-            only_features = False
-        
-        ffeatures, fprobs, fmean, fcov = compute_feature_stats_for_dir(extractor=model,
-                                                                       dataloader=fake_loader,
-                                                                       only_features=only_features,
-                                                                       mean_cov=mean_cov,
-                                                                       save_cache=False,
-                                                                       name=None,
-                                                                       device=device,
-                                                                       verbose=opts.verbose)
-        if 'is' in metrics:
-            is_mean, is_std = compute_is(gen_probs = fprobs, num_splits=opts.num_splits)
-            print('-----------------------------')
-            print(f'IS score: {round(is_mean, 5)} +- {round(is_std, 5)}')
-            json_result['IS'] = [is_mean, is_std]
-            metrics.remove('is')
-            if len(metrics) == 0:
-                dump_json(json_path, json_result)
-                if opts.verbose:
-                    print_time(start)
-                return
-
-        # process real data
-        print('-----------------------------')
-        print('Processing real images...')
-        real_loader = get_loader(dataset_dir=real_dir, 
-                                image_size=img_size, 
-                                batch_size=opts.batch_size, 
-                                num_workers=opts.num_workers,
-                                imagenet_stat=False)
-        
-
-        rfeatures, rprobs, rmean, rcov = compute_feature_stats_for_dir(extractor=model,
-                                                                       dataloader=real_loader,
-                                                                       only_features=only_features,
-                                                                       mean_cov=mean_cov,
-                                                                       save_cache=save_cache,
-                                                                       name=opts.data_name,
-                                                                       device=device,
-                                                                       verbose=opts.verbose)
-        
-        if 'fid' in metrics:
-            fid = compute_fid([rmean, rcov, fmean, fcov])
-            print('-----------------------------')
-            print(f'FID score: {round(fid, 5)}')
-            json_result['FID'] = fid
-            metrics.remove('fid')
-            if len(metrics) == 0:
-                dump_json(json_path, json_result)
-                if opts.verbose:
-                    print_time(start)
-                return
-        
-        if 'kid' in metrics:
-            kid = compute_kid([rfeatures, ffeatures])
-            print('-----------------------------')
-            print(f'KID score: {round(kid, 5)}')
-            json_result['KID'] = kid
-            metrics.remove('kid')
-            if len(metrics) == 0:
-                dump_json(json_path, json_result)
-                if opts.verbose:
-                    print_time(start)
-                return
-
-    model_name = MODEL_POOL['vgg'][0]
-    img_size = MODEL_POOL['vgg'][1]
-    model = Extractor(model_name)  
-    
-    print('-----------------------------')
-    print('Processing synthesized images...')
-    fake_loader = get_loader(dataset_dir=fake_dir, 
-                            image_size=img_size, 
-                            batch_size=opts.batch_size, 
-                            num_workers=opts.num_workers,
-                            imagenet_stat=True)
-    ffeatures, _, _, _ = compute_feature_stats_for_dir(extractor=model,
-                                                       dataloader=fake_loader,
-                                                       only_features=True,
-                                                       mean_cov=False,
-                                                       save_cache=False,
-                                                       name=None,
-                                                       to_numpy=False,
-                                                       float16=check_half,
-                                                       device=device,
-                                                       verbose=opts.verbose)
-    
-    print('-----------------------------')
-    print('Processing real images...')
-    real_loader = get_loader(dataset_dir=real_dir, 
-                            image_size=img_size, 
-                            batch_size=opts.batch_size, 
-                            num_workers=opts.num_workers,
-                            imagenet_stat=True)
-    rfeatures, _, _, _ = compute_feature_stats_for_dir(extractor=model,
-                                                       dataloader=real_loader,
-                                                       only_features=True,
-                                                       mean_cov=False,
-                                                       save_cache=save_cache,
-                                                       name=opts.data_name,
-                                                       to_numpy=False,
-                                                       float16=check_half,
-                                                       device=device,
-                                                       verbose=opts.verbose)
-    precision, recall = compute_pr(rfeatures, 
-                                   ffeatures, 
-                                   k_nearest=opts.k_nearest, 
-                                   row_batch_size=opts.row_batch_size,
-                                   col_batch_size=opts.col_batch_size)
-    
-    json_result['Precision'] = precision
-    json_result['Recall'] = recall
-    dump_json(json_path, json_result)
-    print('-----------------------------')
-    print(f'Precision: {round(precision, 5)}, Recall: {round(recall, 5)}')  
-    if opts.verbose:
-        print_time(start)
-    return 
-
+    fake_dir = opts.fake_dir
+    real_dir = opts.real_dir
+    result = metrics.evaluate(fake_dir, real_dir)
+    print(result)
 
 def get_args():
     parser = argparse.ArgumentParser(description='GANs evaluate')
