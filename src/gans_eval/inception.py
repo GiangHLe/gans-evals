@@ -7,6 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 
+from torch import Tensor
+from typing import Tuple, Dict
+
 try:
     from torchvision.models.utils import load_state_dict_from_url
 except ImportError:
@@ -30,12 +33,14 @@ class InceptionV3(nn.Module):
         2048: 3  # Final average pooling features
     }
 
-    def __init__(self,
-                 output_blocks=(DEFAULT_BLOCK_INDEX,),
-                 resize_input=True,
-                 normalize_input=True,
-                 requires_grad=False,
-                 use_fid_inception=True):
+    def __init__(
+        self,
+        output_blocks: Tuple[int] = (DEFAULT_BLOCK_INDEX,),
+        resize_input: bool = True,
+        normalize_input: bool = True,
+        requires_grad: bool = False,
+        use_fid_inception: bool = True
+    ) -> None:
         """Build pretrained InceptionV3
 
         Parameters
@@ -91,7 +96,7 @@ class InceptionV3(nn.Module):
         for param in self.parameters():
             param.requires_grad = requires_grad
 
-    def forward(self, inp):
+    def forward(self, inp: Tensor) -> Tuple[Tensor]:
         """Get Inception feature maps
 
         Parameters
@@ -132,12 +137,12 @@ class InceptionV3(nn.Module):
         return prob, outp
 
     @staticmethod
-    def get_activation(name, activation):
+    def get_activation(name: str, activation: Dict[str, Tensor]):
         def hook(model, input, output):
             activation[name] = output.detach()
         return hook
     
-def _inception_v3(*args, **kwargs):
+def _inception_v3(*args, **kwargs) -> torch.nn.Module:
     """Wraps `torchvision.models.inception_v3`
 
     Skips default weight inititialization if supported by torchvision version.
@@ -155,7 +160,7 @@ def _inception_v3(*args, **kwargs):
     return torchvision.models.inception_v3(*args, **kwargs)
 
 
-def fid_inception_v3():
+def fid_inception_v3() -> torch.nn.Module:
     """Build pretrained Inception model for FID computation
 
     The Inception model for FID computation uses a different set of weights
@@ -184,10 +189,10 @@ def fid_inception_v3():
 
 class FIDInceptionA(torchvision.models.inception.InceptionA):
     """InceptionA block patched for FID computation"""
-    def __init__(self, in_channels, pool_features):
+    def __init__(self, in_channels: int, pool_features: int) -> None:
         super(FIDInceptionA, self).__init__(in_channels, pool_features)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         branch1x1 = self.branch1x1(x)
 
         branch5x5 = self.branch5x5_1(x)
@@ -209,10 +214,10 @@ class FIDInceptionA(torchvision.models.inception.InceptionA):
 
 class FIDInceptionC(torchvision.models.inception.InceptionC):
     """InceptionC block patched for FID computation"""
-    def __init__(self, in_channels, channels_7x7):
+    def __init__(self, in_channels: int, channels_7x7: int) -> None:
         super(FIDInceptionC, self).__init__(in_channels, channels_7x7)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         branch1x1 = self.branch1x1(x)
 
         branch7x7 = self.branch7x7_1(x)
@@ -237,10 +242,10 @@ class FIDInceptionC(torchvision.models.inception.InceptionC):
 
 class FIDInceptionE_1(torchvision.models.inception.InceptionE):
     """First InceptionE block patched for FID computation"""
-    def __init__(self, in_channels):
+    def __init__(self, in_channels: int) -> None:
         super(FIDInceptionE_1, self).__init__(in_channels)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         branch1x1 = self.branch1x1(x)
 
         branch3x3 = self.branch3x3_1(x)
@@ -270,10 +275,10 @@ class FIDInceptionE_1(torchvision.models.inception.InceptionE):
 
 class FIDInceptionE_2(torchvision.models.inception.InceptionE):
     """Second InceptionE block patched for FID computation"""
-    def __init__(self, in_channels):
+    def __init__(self, in_channels: int) -> None:
         super(FIDInceptionE_2, self).__init__(in_channels)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         branch1x1 = self.branch1x1(x)
 
         branch3x3 = self.branch3x3_1(x)

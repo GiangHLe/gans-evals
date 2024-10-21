@@ -1,12 +1,12 @@
 import torch
 import pickle
 
-def load_pickle(path):
+def load_pickle(path: str):
     with open(path, 'rb') as f:
         data = pickle.load(f)
     return data
 
-def test_float16(device):
+def test_float16(device: str):
     var = torch.randn(15, 30).half().to(device)
     float16_available = True
     try:

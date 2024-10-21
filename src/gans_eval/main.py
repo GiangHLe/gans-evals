@@ -2,7 +2,7 @@
 import argparse
 from gans_eval.metrics import Metrics
    
-def main():
+def main() -> None:
     opts = get_args()
     
     metrics = Metrics(**vars(opts))
@@ -20,7 +20,7 @@ def main():
     result = metrics.evaluate(fake_dir, real_dir)
     print(result)
 
-def get_args():
+def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='GANs evaluate')
     
     parser.add_argument('--fake-dir', type=str, help='Fake image directory', required=True)

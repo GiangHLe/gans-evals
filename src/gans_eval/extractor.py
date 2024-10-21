@@ -1,5 +1,7 @@
 import torch
 import timm
+
+from typing import Tuple, Dict
 from gans_eval.inception import InceptionV3
 
 BLOCK_INDEX_BY_DIM = {
@@ -10,19 +12,19 @@ BLOCK_INDEX_BY_DIM = {
 }
 
 class Inception(torch.nn.Module):
-    def __init__(self, dims=2048) -> None:
+    def __init__(self, dims: int = 2048) -> None:
         super().__init__()
         index = BLOCK_INDEX_BY_DIM[dims]
         self.model = InceptionV3([index], resize_input=True, normalize_input=True)
         temp = self.model.model.fc.bias.clone()
         self.model.model.fc.bias = torch.nn.Parameter(torch.zeros(temp.shape, dtype=temp.dtype))
         
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor]:
         prob, features = self.model(x)
         return prob, features
 
     @staticmethod
-    def get_activation(name, activation):
+    def get_activation(name: str, activation: Dict[str, torch.Tensor]):
         def hook(model, input, output):
             activation[name] = output.detach()
         return hook
@@ -33,11 +35,11 @@ class VGG(torch.nn.Module):
         self.model = timm.create_model('vgg16', pretrained=True)
         self.model.head = torch.nn.Identity()
     
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor]:
         return [None, self.model(x)]
 
 class Extractor(torch.nn.Module):
-    def __init__(self, model_name, dims=2048):
+    def __init__(self, model_name: str, dims: int = 2048) -> None:
         super().__init__()
         if model_name=='inception':
             self.model = Inception(dims=dims)
@@ -47,7 +49,7 @@ class Extractor(torch.nn.Module):
         self.name = model_name
         
     @torch.no_grad()
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor]:
         prob, features = self.model(x)
         if len(features.shape) != 2:
             features = torch.nn.functional.adaptive_avg_pool2d(features, output_size=(1,1)).squeeze(-1).squeeze(-1)
