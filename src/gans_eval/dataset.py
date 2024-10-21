@@ -7,7 +7,7 @@ import cv2
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-EXTENSION = ['png', 'jpg', 'JPG', 'PNG']
+EXTENSION = ['png', 'jpg', 'jpeg', 'JPG', 'PNG', 'JPEG']
 IMAGENET_STAT = [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]]
 STATISTIC_STAT = [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]]
 
