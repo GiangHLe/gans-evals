@@ -26,7 +26,7 @@ class Metrics():
     def __init__(
         self, 
         metrics: List[str], 
-        num_splits: int, 
+        num_splits: int = 10, 
         max_real: int = 1_000_000,
         num_subsets: int = 100,
         max_subset_size: int = 1000,
@@ -34,8 +34,8 @@ class Metrics():
         row_batch_size: int = 10000, 
         col_batch_size: int = 10000, 
         mean_cov: bool = False, 
-        save_cache: bool = True, 
-        name: str = None, 
+        not_save_cache: bool = False, 
+        data_name: str = None, 
         verbose: bool = False, 
         batch_size: int = 50,
         num_workers: int = 9,
@@ -51,8 +51,8 @@ class Metrics():
         self.row_batch_size = row_batch_size
         self.col_batch_size = col_batch_size
         self.mean_cov = mean_cov 
-        self.save_cache = save_cache
-        self.name = name
+        self.save_cache = not(not_save_cache)
+        self.name = data_name
         self.verbose = verbose
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -152,10 +152,7 @@ class Metrics():
         return results['precision'], results['recall']
     
     def compute_feature_stats_for_dir(self, extractor, dataloader, only_features, mean_cov, save_cache, to_numpy):
-        if save_cache:
-            # assert self.name is not None
-            name = 'temp' if self.name is None else self.name
-
+        
         extractor.to(self.device)
         extractor.eval()
         
@@ -163,12 +160,13 @@ class Metrics():
         extent2 = 'with_meancov' if mean_cov else 'without_meancov'
         default_cache_dir = os.path.join(os.environ['HOME'], f'.cache', 'gans_metrics')
         os.makedirs(default_cache_dir, exist_ok=True)
-        default_path = os.path.join(default_cache_dir, f'{self.name}_{extent1}_{extent2}_{extractor.name}.pkl')
-        if os.path.exists(default_path):
-            print(f'Cache exists at {default_path}, use cache')
-            data = load_pickle(default_path)
-            return data
-                    
+        if save_cache:
+            default_path = os.path.join(default_cache_dir, f'{self.name}_{extent1}_{extent2}_{extractor.name}.pkl')
+            if os.path.exists(default_path):
+                print(f'Cache exists at {default_path}, use cache')
+                data = load_pickle(default_path)
+                return data
+                        
         running_mean = None
         running_cov = None
         features = list()
@@ -270,34 +268,33 @@ class Metrics():
             if len(self.metrics)==1:
                 return json_result
             
-        if len(self.metrics) > 1:
-            only_features = False if 'is' in self.metrics else True
-            mean_cov = True if 'fid' in self.metrics else False
+        only_features = False if 'is' in self.metrics else True
+        mean_cov = True if 'fid' in self.metrics else False
 
-            # load inception
-            model_name = self.MODEL_POOL['inception'][0]
-            img_size = self.MODEL_POOL['inception'][1]
-            model = Extractor(model_name, self.dims)
-            
-            # process fake data
-            print('-----------------------------')
-            print('Processing synthesized images...')
-            fake_loader = get_loader(
-                dataset_dir=fake_dir, 
-                image_size=img_size, 
-                batch_size=self.batch_size, 
-                num_workers=self.num_workers,
-                imagenet_stat=False
-            ) 
+        # load inception
+        model_name = self.MODEL_POOL['inception'][0]
+        img_size = self.MODEL_POOL['inception'][1]
+        model = Extractor(model_name, self.dims)
+        
+        # process fake data
+        print('-----------------------------')
+        print('Processing synthesized images...')
+        fake_loader = get_loader(
+            dataset_dir=fake_dir, 
+            image_size=img_size, 
+            batch_size=self.batch_size, 
+            num_workers=self.num_workers,
+            imagenet_stat=False
+        ) 
 
-            ffeatures, fprobs, fmean, fcov = self.compute_feature_stats_for_dir(
-                extractor=model,
-                dataloader=fake_loader,
-                mean_cov=mean_cov,
-                save_cache=False,
-                only_features=only_features,
-                to_numpy=True
-            )
+        ffeatures, fprobs, fmean, fcov = self.compute_feature_stats_for_dir(
+            extractor=model,
+            dataloader=fake_loader,
+            mean_cov=mean_cov,
+            save_cache=False,
+            only_features=only_features,
+            to_numpy=True
+        )
 
         if 'is' in self.metrics:
             is_mean, is_std = self.compute_is(gen_probs=fprobs)
