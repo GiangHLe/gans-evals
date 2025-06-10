@@ -35,7 +35,7 @@ Requirements:
 
 # Usage
 
-Except for IS, other metrics need two individual datasets to process, the simple usage:
+Except for IS, other metrics need two individual datasets to process. The simple usage:
 
 ```
 gans-eval --fake-dir path_to_syn_dataset --real-dir path_to_real_dataset --metrics is fid kid pr
